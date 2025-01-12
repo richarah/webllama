@@ -18,7 +18,16 @@ from weblinx.processing.truncation import (
     convert_elem_dict_to_str_dmr,
 )
 
-from .classes import Action, BBox, State
+# NASTY HACK
+import sys
+import os
+
+# Add the directory containing the 'classes' module to sys.path
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, parent_dir)
+
+# Now you can import as normal
+from classes import Action, BBox, State
 
 if TYPE_CHECKING:
     from transformers import AutoTokenizer
