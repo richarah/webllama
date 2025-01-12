@@ -1,6 +1,6 @@
 import gymnasium as gym
 import browsergym.core  # register the openended task as a gym environment
-from examples.browsergym.agent import WebLinxAgent
+from agent import WebLinxAgent
 
 agent = WebLinxAgent()
 
