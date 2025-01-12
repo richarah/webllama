@@ -6,8 +6,17 @@ from pathlib import Path
 import time
 import logging
 
-from ..classes import Action, State
-from ..functions import compute_dmr_scores, get_top_dmr_candidates
+# nasty hack!
+import sys
+import os
+
+# Add the parent directory to sys.path
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, parent_dir)
+
+# Import the modules
+from classes import Action, State
+from functions import compute_dmr_scores, get_top_dmr_candidates
 
 # Initialize logging
 logging.basicConfig(level=logging.INFO)
@@ -74,19 +83,21 @@ class ServerBase(abc.ABC):
         pass
 
 class ServerSimple(ServerBase):
-    def initialize(self, dmr_name='McGill-NLP/MiniLM-L6-dmr', action_model_name='McGill-NLP/Llama-3-8B-Web', dmr_device='cuda:0', am_device=0, torch_dtype='auto', save_logs=False):
+    def initialize(self, dmr_name='McGill-NLP/MiniLM-L6-dmr', action_model_name="PrunaAI/McGill-NLP-Llama-3-8B-Web-bnb-4bit-smashed", dmr_device='cuda:0', am_device=0, torch_dtype='auto', save_logs=False):
         from transformers import AutoTokenizer
         from sentence_transformers import SentenceTransformer
         from transformers import pipeline
 
-        from ..processing import WebTurnProcessor
+        from processing import WebTurnProcessor
 
         logging.info("Initializing models...")
         self.save_logs = save_logs
         self.dmr = SentenceTransformer(dmr_name, device=dmr_device)
-        self.action_model = pipeline(model=action_model_name, device=am_device, torch_dtype=torch_dtype)
+        # Do not pass device args when loading model w/ accelerate
+        #self.action_model = pipeline(model=action_model_name, device=am_device, torch_dtype=torch_dtype)
+        self.action_model = pipeline(model=action_model_name, torch_dtype=torch_dtype)
         self.tokenizer = self.action_model.tokenizer
-        self.tokenizer_chat = AutoTokenizer.from_pretrained("McGill-NLP/Llama-3-8B-Web")
+        self.tokenizer_chat = AutoTokenizer.from_pretrained("PrunaAI/McGill-NLP-Llama-3-8B-Web-bnb-4bit-smashed")
         self.proc = WebTurnProcessor(tokenizer=self.action_model.tokenizer, start_time=time.time())
         
         self.model_initialized = True
@@ -173,7 +184,7 @@ def default_argument_parser():
     parser.add_argument("--host", type=str, default="localhost", help="Host address to bind the server to.")
     parser.add_argument("--port", type=int, default=8450, help="Port to bind the server to.")
     parser.add_argument("--dmr_name", type=str, default="McGill-NLP/MiniLM-L6-dmr", help="Name of the DMR model.")
-    parser.add_argument("--action_model_name", type=str, default="McGill-NLP/Llama-3-8B-Web", help="Name of the action model on Hugging Face Hub.")
+    parser.add_argument("--action_model_name", type=str, default="PrunaAI/McGill-NLP-Llama-3-8B-Web-bnb-4bit-smashed", help="Name of the action model on Hugging Face Hub.")
     parser.add_argument("--dmr_device", type=str, default="cuda:0", help="Device to run the DMR model on.")
     parser.add_argument("--am_device", type=int, default=0, help="Device to run the action model on.")
     parser.add_argument("--save_logs", action="store_true", help="Save logs of the server requests.")
@@ -188,8 +199,9 @@ if __name__ == "__main__":
     server.initialize(
         dmr_name=args.dmr_name,
         action_model_name=args.action_model_name,
-        dmr_device=args.dmr_device,
-        am_device=args.am_device,
+        # Do not pass device args when loading with accelerate
+        #dmr_device=args.dmr_device,
+        #am_device=args.am_device,
         save_logs=args.save_logs,
     )
     run_server(server, host=args.host, port=args.port)

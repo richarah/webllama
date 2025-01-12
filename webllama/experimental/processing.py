@@ -16,9 +16,18 @@ from weblinx.processing.truncation import (
     multi_attempt_truncate_dom_tree,
 )
 
-from .classes import Action, State
-from .templates.weblinx import get_system_prompt_template
-from .functions import (
+# NASTY HACK
+import sys
+import os
+
+# Add the parent directory (or the directory where the modules are located) to sys.path
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, parent_dir)
+
+# Now you can import the modules as needed
+from classes import Action, State
+from templates.weblinx import get_system_prompt_template
+from functions import (
     prepare_query_for_dmr,
     prepare_dmr_elements,
     convert_prev_actions_to_chat,
